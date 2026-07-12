@@ -40,6 +40,24 @@ Use it for:
 
 The first message from your client flows the moment the sandbox is up (typically ~1–2 s).
 
+## Cold starts: `npx`-based servers
+
+`npx -y some-server` downloads the package on first run. If you use that as the
+server command directly, the process re-execs partway through startup and the
+client's first `initialize` can be lost. Pre-install it in `--setup` and run the
+resulting binary instead — startup is then near-instant and stdin is stable:
+
+```bash
+npx mcp-sandbox run \
+  --setup "npm install -g @modelcontextprotocol/server-everything" \
+  -- mcp-server-everything
+```
+
+The client's `initialize` is buffered while `--setup` runs, so as long as your
+MCP client's startup timeout covers the install (Claude Code's default is 60 s,
+tunable via `MCP_TIMEOUT`), the handshake completes cleanly. `mcp-sandbox` prints
+a hint if you pass an `npx`/`uvx` command without `--setup`.
+
 ## Options
 
 | Flag | Meaning |

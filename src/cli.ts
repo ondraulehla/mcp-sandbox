@@ -112,6 +112,17 @@ async function main(): Promise<number> {
     },
   };
 
+  // npx/uvx download the package on first run; if that happens as the server
+  // command itself, the process re-execs mid-startup and early stdin is lost.
+  // Pre-installing in --setup and running the resulting binary avoids it.
+  const launcher = serverCommand[0] ?? '';
+  if (/^(npx|uvx|pnpx|bunx)$/.test(launcher) && !parsed.values.setup) {
+    log(
+      `note: "${launcher}" downloads on first run — if the client's initialize times out, ` +
+        `pre-install via --setup and run the installed binary instead.`,
+    );
+  }
+
   log(`starting: ${serverCommand.join(' ')}`);
   const bridge = await startBridge({
     backend,

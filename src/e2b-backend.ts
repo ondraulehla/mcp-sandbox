@@ -1,4 +1,5 @@
 import { Sandbox } from 'e2b';
+import { formatBytes, type Mount } from './fs.js';
 import type { SandboxBackend, SandboxProcess, SandboxProcessOpts } from './types.js';
 
 export interface E2bBackendOpts {
@@ -9,9 +10,14 @@ export interface E2bBackendOpts {
   ttlSeconds: number;
   /** Optional command to run before the server starts (e.g. installs). */
   setupCommand?: string | undefined;
+  /** Local files to copy into the sandbox before setup and server start. */
+  mounts?: Mount[] | undefined;
   /** Diagnostics writer (stderr). */
   log: (text: string) => void;
 }
+
+/** Batch size for files.write calls — keeps individual payloads modest. */
+const UPLOAD_BATCH = 50;
 
 /** Real E2B adapter: one sandbox per bridged MCP server session. */
 export class E2bBackend implements SandboxBackend {
@@ -30,6 +36,24 @@ export class E2bBackend implements SandboxBackend {
       timeoutMs: opts.ttlSeconds * 1000,
     });
     opts.log(`sandbox ${this.sandbox.sandboxId} up (template ${opts.template}, ttl ${opts.ttlSeconds}s)`);
+
+    // Copy --fs content in before --setup so setup commands can use it
+    // (e.g. pip install -r /home/user/project/requirements.txt).
+    for (const mount of opts.mounts ?? []) {
+      if (mount.files.length === 0) {
+        await this.sandbox.files.makeDir(mount.remotePath);
+      }
+      for (let i = 0; i < mount.files.length; i += UPLOAD_BATCH) {
+        await this.sandbox.files.write(
+          mount.files.slice(i, i + UPLOAD_BATCH).map((f) => ({ path: f.path, data: f.data })),
+        );
+      }
+      const skipped = mount.skippedSymlinks > 0 ? `, ${mount.skippedSymlinks} symlinks skipped` : '';
+      opts.log(
+        `copied ${mount.localPath} → ${mount.remotePath} ` +
+          `(${mount.files.length} files, ${formatBytes(mount.totalBytes)}${skipped})`,
+      );
+    }
 
     if (opts.setupCommand) {
       opts.log(`running setup: ${opts.setupCommand}`);

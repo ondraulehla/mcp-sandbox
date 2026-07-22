@@ -1,5 +1,7 @@
 # mcp-sandbox
 
+[![CI](https://github.com/ondraulehla/mcp-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/ondraulehla/mcp-sandbox/actions/workflows/ci.yml)
+
 Run any MCP server **inside an isolated [E2B](https://e2b.dev) cloud sandbox** instead of on your machine — one command, no code changes on either side.
 
 ```bash
@@ -64,12 +66,30 @@ a hint if you pass an `npx`/`uvx` command without `--setup`.
 | --- | --- |
 | `--env KEY=VALUE` | set an env var for the server (repeatable) |
 | `--env KEY` | forward `KEY` from your local environment — an explicit allowlist, nothing else crosses |
+| `--fs path[:to]` | copy a local file/directory into the sandbox before start (repeatable, default target `/home/user/<basename>`) |
 | `--trace file.jsonl` | record all JSON-RPC traffic as JSONL (`{ts, dir, msg}` per line) |
 | `--ttl seconds` | sandbox lifetime / hard session cap (default 1800) |
 | `--template name` | E2B sandbox template (default `base`) |
 | `--setup "cmd"` | run a command in the sandbox before the server starts (e.g. installs) |
 
 `E2B_API_KEY` is read locally and **never forwarded** into the sandbox.
+
+### Giving the server files: `--fs`
+
+Some servers need data to work on (a docs folder for a search server, a CSV for
+an analysis server). `--fs` copies it in explicitly:
+
+```bash
+npx mcp-sandbox run --fs ./docs -- npx -y some-docs-mcp        # → /home/user/docs
+npx mcp-sandbox run --fs ./data.csv:/srv/input.csv -- …        # explicit target
+```
+
+This is **copy-in only** — the server works on its own copy, and nothing it
+writes ever comes back to your machine. Symlinks are never followed (so a
+mounted directory can't smuggle in `~/.ssh` through a link), and a mount is
+rejected up front if it exceeds 2 000 files or 50 MB, before any sandbox is
+created. Files land before `--setup` runs, so setup can use them
+(e.g. `--setup "pip install -r /home/user/project/requirements.txt"`).
 
 ## Security model
 
@@ -92,7 +112,7 @@ MCP client ──stdio──▶ mcp-sandbox ──E2B API──▶ [sandbox: npx
 
 ```bash
 npm install
-npm test        # 11 tests — the bridge runs against an in-memory sandbox fake, no E2B needed
+npm test        # 23 tests — bridge + --fs logic run offline, no E2B needed
 npm run build
 ```
 
@@ -100,7 +120,6 @@ The E2B integration lives behind a small `SandboxBackend` interface (`src/types.
 
 ## Roadmap
 
-- `--fs ./dir:ro` — copy a local directory into the sandbox (explicit, read-only by default)
 - Trace viewer integration with [agent-lens](https://github.com/ondraulehla/agent-lens)
 - Sandbox pooling for faster cold starts
 - HTTP/SSE transport bridging for remote-style servers

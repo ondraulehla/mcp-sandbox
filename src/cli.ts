@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 import { startBridge, type BridgeIo } from './bridge.js';
 import { E2bBackend } from './e2b-backend.js';
 import { resolveEnvAllowlist } from './env.js';
+import { collectMount } from './fs.js';
 import { FileTraceSink } from './trace.js';
 
 const HELP = `mcp-sandbox — run any MCP server inside an isolated E2B cloud sandbox
@@ -17,6 +18,9 @@ access to your filesystem or environment.
 Options:
   --env KEY[=VALUE]   allowlist an env var for the server (repeatable);
                       bare KEY forwards the value from your local environment
+  --fs <path>[:<to>]  copy a local file/directory into the sandbox before start
+                      (repeatable; default target /home/user/<basename>;
+                      copy-in only — server-side changes never come back)
   --trace <file>      record all JSON-RPC traffic as JSONL
   --ttl <seconds>     sandbox lifetime, hard session cap (default 1800)
   --template <name>   E2B sandbox template (default "base")
@@ -41,6 +45,7 @@ async function main(): Promise<number> {
       allowPositionals: true,
       options: {
         env: { type: 'string', multiple: true, default: [] },
+        fs: { type: 'string', multiple: true, default: [] },
         trace: { type: 'string' },
         ttl: { type: 'string', default: '1800' },
         template: { type: 'string', default: 'base' },
@@ -88,11 +93,21 @@ async function main(): Promise<number> {
     process.stderr.write(`[mcp-sandbox] ${text}\n`);
   };
 
+  // Collect --fs content up front so bad paths fail before a sandbox is created.
+  let mounts;
+  try {
+    mounts = await Promise.all(parsed.values.fs.map((spec) => collectMount(spec)));
+  } catch (error) {
+    process.stderr.write(`${String(error instanceof Error ? error.message : error)}\n`);
+    return 2;
+  }
+
   const backend = new E2bBackend({
     apiKey,
     template: parsed.values.template,
     ttlSeconds,
     setupCommand: parsed.values.setup,
+    mounts,
     log,
   });
 

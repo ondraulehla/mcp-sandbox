@@ -1,6 +1,6 @@
 {
   "name": "mcp-sandbox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run any MCP server inside an isolated E2B cloud sandbox instead of on your machine — one command, no code changes. Transparent stdio bridge with env allowlisting and JSONL traffic tracing.",
   "keywords": [
     "mcp",

@@ -1,6 +1,8 @@
 # mcp-sandbox
 
 [![CI](https://github.com/ondraulehla/mcp-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/ondraulehla/mcp-sandbox/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/mcp-sandbox)](https://www.npmjs.com/package/mcp-sandbox)
+[![license](https://img.shields.io/npm/l/mcp-sandbox)](LICENSE)
 
 Run any MCP server **inside an isolated [E2B](https://e2b.dev) cloud sandbox** instead of on your machine — one command, no code changes on either side.
 

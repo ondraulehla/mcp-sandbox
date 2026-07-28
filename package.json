@@ -1,6 +1,6 @@
 {
   "name": "mcp-sandbox",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Run any MCP server inside an isolated E2B cloud sandbox instead of on your machine — one command, no code changes. Transparent stdio bridge with env allowlisting and JSONL traffic tracing.",
   "keywords": [
     "mcp",
@@ -13,6 +13,12 @@
   ],
   "license": "MIT",
   "author": "Ondřej Úlehla",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ondraulehla/mcp-sandbox.git"
+  },
+  "homepage": "https://github.com/ondraulehla/mcp-sandbox#readme",
+  "bugs": "https://github.com/ondraulehla/mcp-sandbox/issues",
   "type": "module",
   "bin": {
     "mcp-sandbox": "./dist/cli.js"

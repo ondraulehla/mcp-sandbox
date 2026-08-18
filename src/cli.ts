@@ -133,7 +133,7 @@ async function main(): Promise<number> {
   const launcher = serverCommand[0] ?? '';
   if (/^(npx|uvx|pnpx|bunx)$/.test(launcher) && !parsed.values.setup) {
     log(
-      `note: "${launcher}" downloads on first run — if the client's initialize times out, ` +
+      `note: "${launcher}" downloads on first run — if the client's first request times out, ` +
         `pre-install via --setup and run the installed binary instead.`,
     );
   }

@@ -48,7 +48,8 @@ The first message from your client flows the moment the sandbox is up (typically
 
 `npx -y some-server` downloads the package on first run. If you use that as the
 server command directly, the process re-execs partway through startup and the
-client's first `initialize` can be lost. Pre-install it in `--setup` and run the
+client's first request can be lost — an `initialize` on clients older than MCP
+2026-07-28, any other call on newer ones. Pre-install it in `--setup` and run the
 resulting binary instead — startup is then near-instant and stdin is stable:
 
 ```bash
@@ -57,9 +58,9 @@ npx mcp-sandbox run \
   -- mcp-server-everything
 ```
 
-The client's `initialize` is buffered while `--setup` runs, so as long as your
+The client's first request is buffered while `--setup` runs, so as long as your
 MCP client's startup timeout covers the install (Claude Code's default is 60 s,
-tunable via `MCP_TIMEOUT`), the handshake completes cleanly. `mcp-sandbox` prints
+tunable via `MCP_TIMEOUT`), startup completes cleanly. `mcp-sandbox` prints
 a hint if you pass an `npx`/`uvx` command without `--setup`.
 
 ## Options
@@ -110,6 +111,8 @@ MCP client ──stdio──▶ mcp-sandbox ──E2B API──▶ [sandbox: npx
 
 `mcp-sandbox` spawns one E2B sandbox per session, starts the server there with `stdin: true`, and pipes bytes both ways. Server output is line-buffered so your client never sees a partial JSON-RPC frame even when the transport chunks arbitrarily; server stderr is forwarded to your stderr with a `[sandbox]` prefix, never into the protocol stream.
 
+The bridge never parses the protocol. It forwards client bytes verbatim and only reassembles server output into whole lines, so it is independent of which MCP revision the two ends speak. The 2026-07-28 specification — which removed the `initialize`/`initialized` handshake and protocol-level sessions — required no change here.
+
 ## Development
 
 ```bash
@@ -124,7 +127,7 @@ The E2B integration lives behind a small `SandboxBackend` interface (`src/types.
 
 - Trace viewer integration with [agent-lens](https://github.com/ondraulehla/agent-lens)
 - Sandbox pooling for faster cold starts
-- HTTP/SSE transport bridging for remote-style servers
+- Streamable HTTP transport bridging for remote-style servers
 
 ## License
 
